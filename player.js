@@ -15,18 +15,34 @@ class Player {
         this.spritesheet_punch = new Image();
         this.spritesheet_punch.src = "Sprites/player/png/attack/punch.png";
 
+        this.spritesheet_jump = new Image();
+        this.spritesheet_jump.src = "Sprites/player/png/4jump/jump.png";
+
+        this.spritesheet_fall = new Image();
+        this.spritesheet_fall.src = "Sprites/player/png/glide/fall.png";
+
         this.x = posX;
         this.y = posY;
+        this.imageWidth = canvas.width * 0.08
+        this.imageHeight = canvas.height * 0.2
 
         this.gameFrame = 0;
         this.frameSpeed = 2;
 
-        //this.isMoving = false;
-        this.isDead = false;
+        this.movement = {
+            LEFT : false,
+            RIGHT : false,
+            JUMP : false,
+            FALL : false,
+            PUNCH : false
+        }
 
-        this.isLeft = false;
-        this.isRight = false;
-        this.isPunch = false;
+        this.keyCodes = {
+            UP : "ArrowUp",
+            LEFT : "ArrowLeft",
+            RIGHT : "ArrowRight",
+            DOWN : "ArrowDown"
+        }
 
         this.actions = {
             'walk' : {
@@ -64,67 +80,141 @@ class Player {
                 'frame_counter' : 0,
                 'spriteWidth' : 537,
                 'speed' : 5,
+            },
+
+            'jump' : {
+                'spritesheet' : this.spritesheet_jump,
+                'frame_counter' : 0,
+                'spriteWidth' : 364,
+                'jump_limit' : 100,
+                'position' : 0
+            },
+
+            'fall' : {
+                'spritesheet' : this.spritesheet_fall,
+                'frame_counter' : 0,
+                'spriteWidth' : 445,
+                'fall_limit' : 0,
+                'position' : 100 
             }
         }
     }
 
     move(keyType, key) {
-        if (keyType == "key_down") {
-            
+        console.log(key)
 
-            if (key == "ArrowRight" && !this.isDead && this.x < (canvas.width/1.1)) {
-                this.x = this.x + this.actions['walk'].speed;
-               // this.isMoving = true;
-                this.isRight = true;
-            }
-    
-            else if (key == "ArrowLeft" && !this.isDead) {
-                this.x = this.x - this.actions['Lwalk'].speed;
-                //this.isMoving = true;
-                this.isLeft = true;
+        // when player holds the key
+        if (keyType == "keydown") {
+            if (key == this.keyCodes.RIGHT) {
+                this.movement.RIGHT = true;
             }
 
-            else if (key == "ArrowDown" && !this.isDead && !this.isLeft && !this.Right){
-                this.isPunch = true;
-                this.actions['punch']
+            if (key == this.keyCodes.LEFT) {
+                this.movement.LEFT = true;  
+            }
 
+            if (key == this.keyCodes.UP) {
+                this.movement.JUMP = true
+                this.keyCodes.UP = false;
+                return this.keyCodes.UP = true;
+            }
+
+            if (key == 'z') {
+                this.movement.PUNCH = true
             }
         }
-        
-        else if (keyType == "key_up") {
-            //this.isMoving = false;
-            this.isPunch = false;
-            this.isLeft = false;
-            this.isRight = false;
-            
 
-            this.actions['idle']
+        // when the player releases the key
+        if (keyType == "keyup") {
+            if (key == this.keyCodes.RIGHT) {
+                this.movement.RIGHT = false;
+            }
+
+            if (key == this.keyCodes.LEFT) {
+                this.movement.LEFT = false
+            }
+        }
+    }
+
+    isWalking() {
+        if (this.movement.RIGHT || this.movement.LEFT) {
+            return true;
         }
 
-        
+        else {
+            return false;
+        }
+    }
 
+    isDead() {
+        if (this.x + this.imageWidth >= canvas.width) {
+            return true
+        }
+
+        else {
+            return false
+        }
+    }
+
+    isPunching() {
+        // return this.movement.PUNCH
+
+        if (this.movement.PUNCH) {
+            return true
+        }
+
+        else {
+            return false
+        }
+    }
+
+    isJumping() {
+        return this.movement.JUMP
+        
+    }
+
+    isFalling() {
+        return this.movement.FALL
     }
 
     update(action) {
-        // check if action exists in JSON
-        // if (action in this.actions) {
-        //     this.actions[action].frame_counter++;
-
-        //     if (this.actions[action].frame_counter > this.actions[action].frame_limit) {
-        //         this.actions[action].frame_counter = 0;
-        //     }
-        // }
-
         if (this.gameFrame % this.frameSpeed == 0) {
-            if (action == "walk") {
-                this.actions[action].frame_counter++;
+            // movements
+            if (!this.isDead()) {
+                if (this.movement.RIGHT ) {
+                    this.x = this.x + this.actions.walk.speed
+                }
     
-                if (this.actions[action].frame_counter > 9) {
-                    this.actions[action].frame_counter = 0;
+                else if (this.movement.LEFT) {
+                    this.x = this.x - this.actions['walk'].speed
+                }
+    
+                if (this.movement.JUMP) {
+                    this.y = this.y - 10
+                    this.actions.jump.position = this.actions.jump.position + 10;
+                    
+                    if (this.actions.jump.position >= this.actions.jump.jump_limit) {
+                        this.actions.jump.position = 0;
+                        this.movement.JUMP = false;
+                        this.movement.FALL = true;
+                    }
+                    
+                
+                }
+                
+
+                else if (this.movement.FALL) {
+                    this.y = this.y + 10
+                    this.actions.fall.position = this.actions.fall.position - 10
+                    
+                    if (this.actions.fall.position <= this.actions.fall.fall_limit) {
+                        this.actions.fall.position = 100;
+                        this.movement.FALL = false;
+                    }
                 }
             }
 
-            else if (action == "Lwalk") {
+            if (action == "walk") {
                 this.actions[action].frame_counter++;
     
                 if (this.actions[action].frame_counter > 9) {
@@ -148,11 +238,28 @@ class Player {
                 }
             }
 
-            else if (action == "punch") {
-                this.actions[action].frame_counter++;
+            else if (action == 'punch') {
+                this.actions.punch.frame_counter++;
 
-                if (this.actions[action].frame_counter > 9) {
-                    this.actions[action].frame_counter = 0;
+                if (this.actions.punch.frame_counter > 9) {
+                    this.actions.punch.frame_counter = 0;
+                    this.movement.PUNCH = false
+                }
+            }
+
+            else if (action == 'jump') {
+                this.actions.jump.frame_counter++;
+
+                if (this.actions.jump.frame_counter > 9) {
+                    this.actions.jump.frame_counter = 0;
+                }
+            }
+
+            else if (action == "fall") {
+                this.actions.fall.frame_counter++;
+
+                if (this.actions.fall.frame_counter > 9) {
+                    this.actions.fall.frame_counter = 0;
                 }
             }
         }
